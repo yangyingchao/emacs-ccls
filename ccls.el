@@ -182,7 +182,8 @@ DIRECTION can be \"D\", \"L\", \"R\" or \"U\"."
  lsp-ccls "cpp" #'ccls--get-root
  `(,ccls-executable ,@ccls-extra-args)
  :initialize #'ccls--initialize-client
- :extra-init-params #'ccls--get-init-params)
+ :extra-init-params #'ccls--get-init-params
+ :use-native-json t)
 
 (provide 'ccls)
 ;;; ccls.el ends here
