@@ -63,17 +63,9 @@
   :type '(repeat string)
   :group 'ccls)
 
-(defcustom ccls-cache-dir
-  ".ccls-cache/"
-  "Directory in which ccls will store its index cache.
-Relative to the project root directory."
-  :type 'directory
-  :group 'ccls)
-
-(defcustom ccls-extra-init-params
+(defcustom ccls-initialization-options
   nil
-  "Additional initializationOptions passed to ccls."
-  :type '(repeat string)
+  "initializationOptions"
   :group 'ccls)
 
 ;; ---------------------------------------------------------------------
@@ -146,24 +138,23 @@ DIRECTION can be \"D\", \"L\", \"R\" or \"U\"."
        (font-lock-ensure)
        (buffer-string))))
 
-(defun ccls--initialize-client (client)
-  (dolist (p ccls--handlers)
-    (lsp-client-on-notification client (car p) (cdr p)))
-  (lsp-provide-marked-string-renderer client "c" (ccls--make-renderer "c"))
-  (lsp-provide-marked-string-renderer client "cpp" (ccls--make-renderer "c++"))
-  (lsp-provide-marked-string-renderer client "objectivec" (ccls--make-renderer "objc")))
+(defun ccls--suggest-project-root ()
+  (and (memq major-mode '(c-mode c++-mode cuda-mode objc-mode))
+       (locate-dominating-file default-directory ".ccls-root")))
 
-(defun ccls--get-init-params (workspace)
-  `(:cacheDirectory ,(file-name-as-directory
-                      (expand-file-name ccls-cache-dir (lsp--workspace-root workspace)))
-                    ,@ccls-extra-init-params)) ; TODO: prog reports for modeline
+(advice-add 'lsp--suggest-project-root :before-until #'ccls--suggest-project-root)
 
-;;;###autoload (autoload 'lsp-ccls-enable "ccls")
-(lsp-define-stdio-client
- lsp-ccls "cpp" #'ccls--get-root
- `(,ccls-executable ,@ccls-extra-args)
- :initialize #'ccls--initialize-client
- :extra-init-params #'ccls--get-init-params)
+(lsp-register-client
+ (make-lsp-client
+  :new-connection (lsp-stdio-connection (lambda () (cons ccls-executable ccls-extra-args)))
+  :major-modes '(c-mode c++-mode cuda-mode objc-mode)
+  :server-id 'ccls
+  :multi-root nil
+  :notification-handlers
+  (lsp-ht ("$ccls/publishSkippedRanges" #'ccls--publish-skipped-ranges)
+          ("$ccls/publishSemanticHighlight" #'ccls--publish-semantic-highlight))
+  :initialization-options (lambda () ccls-initialization-options)
+  :library-folders-fn nil))
 
 (provide 'ccls)
 ;;; ccls.el ends here
