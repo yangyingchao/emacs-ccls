@@ -24,7 +24,7 @@
 ;;; Code:
 
 (require 'cc-mode)
-(require 'lsp-mode)
+(require 'lsp)
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
@@ -67,15 +67,5 @@
 (defun ccls--render-type (str)
   "Render a string as a type"
   (string-remove-suffix " a;" (ccls--render-string (format "%s a;" str))))
-
-;; ---------------------------------------------------------------------
-;;   Notification handlers
-;; ---------------------------------------------------------------------
-
-(defvar ccls--handlers nil
-  "List of cons-cells of (METHOD . HANDLER) pairs, where METHOD is the lsp method to handle,
-and handler is a function invoked as (handler WORKSPACE PARAMS), where WORKSPACE is the current
-lsp-workspace, and PARAMS is a hashmap of the params recieved with the notification.")
-
 
 (provide 'ccls-common)
